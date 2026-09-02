@@ -1,0 +1,38 @@
+# Configuración de despliegue en Render.
+#
+# Un único servicio web sirve la API y la aplicación React construida, de modo
+# que todo el proyecto vive en una sola URL. La base de datos PostgreSQL se
+# aloja en Neon (plan gratuito) y su cadena de conexión se configura como
+# variable de entorno DATABASE_URL desde el panel de Render.
+#
+# Render detecta este archivo automáticamente al conectar el repositorio
+# mediante la opción "Blueprint".
+
+services:
+  - type: web
+    name: repara-y-recarga
+    runtime: node
+    plan: free
+    region: oregon
+    # Sin "branch": Render usa la rama por defecto del repositorio, así funciona
+    # tanto si la llamas main como master.
+
+    buildCommand: npm run build:render
+    startCommand: npm start
+
+    # Render reinicia el servicio si esta ruta deja de responder.
+    healthCheckPath: /api/salud
+
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+
+      # Bloquea las operaciones irreversibles en el enlace público, porque la
+      # sesión de este prototipo es simulada (RF06 llega en el Sprint 2).
+      - key: MODO_DEMO
+        value: "true"
+
+      # Cadena de conexión de Neon. Se marca sync:false para que Render la pida
+      # al desplegar y no quede escrita en el repositorio.
+      - key: DATABASE_URL
+        sync: false

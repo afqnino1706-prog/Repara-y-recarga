@@ -1,0 +1,19 @@
+{
+  "name": "repara-y-recarga",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma de localización de talleres de reparación (ODS 12) — prototipo del Sprint 1",
+  "scripts": {
+    "instalar": "npm install && npm --prefix server install && npm --prefix client install",
+    "db:reset": "npm --prefix server run db:reset",
+    "dev": "concurrently -n api,web -c green,cyan \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "dev:api": "npm --prefix server run dev",
+    "dev:web": "npm --prefix client run dev",
+    "pruebas": "node server/pruebas-api.mjs",
+    "build:render": "npm --prefix client install && npm --prefix server install && npm --prefix client run build && npm --prefix server run prod:preparar",
+    "start": "npm --prefix server start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

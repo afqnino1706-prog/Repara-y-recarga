@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Repara y Recarga">
+  <rect width="64" height="64" rx="14" fill="#1B4332"/>
+  <path d="M32 9c-8.3 0-15 6.7-15 15 0 10.9 15 31 15 31s15-20.1 15-31c0-8.3-6.7-15-15-15z" fill="#E07A2F"/>
+  <circle cx="32" cy="24" r="6.2" fill="#FFFFFF"/>
+</svg>

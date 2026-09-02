@@ -1,0 +1,122 @@
+// Esquema de base de datos — Repara y Recarga
+// Transcrito del Modelo Entidad-Relación documentado en el Plan de Desarrollo del Software.
+// SQLite no soporta enums de Prisma: los campos de estado se modelan como String
+// con el conjunto de valores permitido indicado en el comentario.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id            String   @id @default(uuid())
+  nombre        String
+  correo        String   @unique
+  passwordHash  String
+  rol           String   @default("USUARIO") // USUARIO | PROPIETARIO | ADMIN
+  ciudad        String?
+  fotoUrl       String?
+  fechaRegistro DateTime @default(now())
+
+  resenas              Resena[]
+  favoritos            Favorito[]
+  propuestas           Comercio[] @relation("PropuestasUsuario")
+  comerciosVerificados Comercio[] @relation("PropietarioComercio")
+}
+
+model Categoria {
+  id          String  @id @default(uuid())
+  nombre      String  @unique
+  descripcion String?
+  icono       String?
+  activa      Boolean @default(true)
+  orden       Int     @default(0)
+
+  comercios Comercio[]
+}
+
+model Comercio {
+  id              String   @id @default(uuid())
+  nombreComercial String
+  descripcion     String?
+  categoriaId     String
+  direccion       String
+  ciudad          String   @default("Bogotá")
+  lat             Float
+  lng             Float
+  telefono        String?
+  whatsapp        String?
+  correo          String?
+  fotoPortada     String?
+  estado          String   @default("PENDIENTE") // PENDIENTE | APROBADO | RECHAZADO
+  propietarioId   String?
+  propuestoPorId  String?
+  fechaCreacion   DateTime @default(now())
+
+  categoria    Categoria  @relation(fields: [categoriaId], references: [id])
+  propietario  Usuario?   @relation("PropietarioComercio", fields: [propietarioId], references: [id])
+  propuestoPor Usuario?   @relation("PropuestasUsuario", fields: [propuestoPorId], references: [id])
+  horarios     Horario[]
+  servicios    Servicio[]
+  resenas      Resena[]
+  favoritos    Favorito[]
+
+  @@index([categoriaId])
+  @@index([estado])
+}
+
+/// Un comercio tiene una fila por franja horaria. Los horarios partidos
+/// (mañana y tarde el mismo día) se representan con dos filas del mismo diaSemana.
+model Horario {
+  id           String @id @default(uuid())
+  comercioId   String
+  diaSemana    Int // 0 = domingo … 6 = sábado
+  horaApertura String // "08:00"
+  horaCierre   String // "18:00"
+
+  comercio Comercio @relation(fields: [comercioId], references: [id], onDelete: Cascade)
+
+  @@index([comercioId])
+}
+
+/// Lista explícita de objetos y servicios que el taller repara (RF05).
+model Servicio {
+  id         String @id @default(uuid())
+  comercioId String
+  nombre     String
+
+  comercio Comercio @relation(fields: [comercioId], references: [id], onDelete: Cascade)
+
+  @@index([comercioId])
+}
+
+model Resena {
+  id                String   @id @default(uuid())
+  usuarioId         String
+  comercioId        String
+  calificacion      Int // 1 a 5
+  comentario        String?
+  respuestaComercio String?
+  fecha             DateTime @default(now())
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+  comercio Comercio @relation(fields: [comercioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, comercioId]) // una reseña por usuario y comercio (RF08)
+  @@index([comercioId])
+}
+
+model Favorito {
+  usuarioId     String
+  comercioId    String
+  fechaGuardado DateTime @default(now())
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+  comercio Comercio @relation(fields: [comercioId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, comercioId])
+}
