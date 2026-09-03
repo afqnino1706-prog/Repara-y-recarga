@@ -13,7 +13,9 @@ services:
     name: repara-y-recarga
     runtime: node
     plan: free
-    region: oregon
+    # Misma región que la base de datos de Neon (AWS US East 2, Ohio): así las
+    # consultas no cruzan el continente en cada petición.
+    region: ohio
     # Sin "branch": Render usa la rama por defecto del repositorio, así funciona
     # tanto si la llamas main como master.
 
