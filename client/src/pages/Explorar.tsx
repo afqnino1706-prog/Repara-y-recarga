@@ -25,6 +25,11 @@ export function Explorar() {
   const [permisoDenegado, setPermisoDenegado] = useState(false);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
 
+  // El escalonado de entrada se reserva a la primera vez que llega la lista.
+  // Filtrar y buscar son acciones de alta frecuencia: repetir la animación en
+  // cada pulsación convertiría el pulido en lentitud percibida.
+  const [escalonar, setEscalonar] = useState(true);
+
   const refLista = useRef<HTMLDivElement>(null);
 
   // Geolocalización: si se deniega, el mapa se centra en la coordenada por
@@ -74,6 +79,13 @@ export function Explorar() {
       clearTimeout(t);
     };
   }, [q, seleccionadas, abiertoAhora, orden, ubicacion]);
+
+  // En cuanto la primera tanda termina de entrar, se desactiva para siempre.
+  useEffect(() => {
+    if (!escalonar || comercios.length === 0) return;
+    const t = setTimeout(() => setEscalonar(false), 700);
+    return () => clearTimeout(t);
+  }, [escalonar, comercios.length]);
 
   const centro = useMemo<[number, number]>(() => ubicacion ?? CENTRO_BOGOTA, [ubicacion]);
 
@@ -173,11 +185,14 @@ export function Explorar() {
             </div>
           )}
 
-          {comercios.map((c) => (
+          {comercios.map((c, i) => (
             <article
               key={c.id}
               id={`tarjeta-${c.id}`}
-              className={`tarjeta ${seleccionado === c.id ? 'sel' : ''}`}
+              className={`tarjeta ${seleccionado === c.id ? 'sel' : ''} ${escalonar ? 'entra' : ''}`}
+              // El retardo se corta en la sexta tarjeta: más allá, la última en
+              // aparecer se haría esperar más de lo que tolera la vista.
+              style={{ '--orden': Math.min(i, 6) } as React.CSSProperties}
               onClick={() => navegar(`/comercio/${c.id}`)}
               onMouseEnter={() => setSeleccionado(c.id)}
             >

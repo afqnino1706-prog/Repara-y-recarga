@@ -9,7 +9,15 @@ type Aviso = { tipo: 'ok' | 'error'; texto: string; detalle?: string } | null;
 export function AdminCategorias() {
   const { usuario } = useSesion();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [aviso, setAviso] = useState<Aviso>(null);
+  const [aviso, setAvisoBruto] = useState<Aviso>(null);
+
+  // Contador que fuerza un nodo nuevo en cada aviso: sin él, dos operaciones
+  // seguidas reutilizarían el mismo elemento y la segunda no se animaría.
+  const [avisoN, setAvisoN] = useState(0);
+  const setAviso = (a: Aviso) => {
+    setAvisoBruto(a);
+    setAvisoN((n) => n + 1);
+  };
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [icono, setIcono] = useState('');
@@ -107,7 +115,7 @@ export function AdminCategorias() {
       )}
 
       {aviso && (
-        <div className={`alerta ${aviso.tipo}`}>
+        <div key={avisoN} className={`alerta ${aviso.tipo}`}>
           {aviso.texto}
           {aviso.detalle && <div style={{ marginTop: 4, fontSize: 12.5 }}>{aviso.detalle}</div>}
         </div>

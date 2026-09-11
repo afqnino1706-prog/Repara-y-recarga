@@ -12,9 +12,75 @@
   --danger: #a83242;
   --radio: 12px;
   --sombra: 0 2px 10px rgba(27, 67, 50, 0.08);
+  --sombra-alta: 0 6px 18px rgba(27, 67, 50, 0.13);
+
+  /* Movimiento. Un vocabulario corto y reutilizado en toda la interfaz:
+     curvas asimétricas (arrancan rápido y asientan despacio) para que la
+     respuesta se sienta inmediata aunque la animación dure algo más. */
+  --curva-entrada: cubic-bezier(0.22, 1, 0.36, 1);
+  --curva-pulsacion: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --t-pulsacion: 140ms;
+  --t-hover: 150ms;
+  --t-entrada: 280ms;
 }
 
 * { box-sizing: border-box; }
+
+/* ---------- Movimiento base ----------
+   Realimentación de pulsación en todo lo que se puede tocar. La bajada es
+   instantánea (0 ms) para que el control responda en el mismo momento del
+   toque; la subida sí se suaviza. `touch-action: manipulation` elimina el
+   retardo de 300 ms que los navegadores móviles reservan para el doble toque.
+   El movimiento va en `transform`, que no provoca recálculo de maquetación. */
+.btn,
+.chip,
+.tarjeta,
+.barra nav a,
+.selector-sesion,
+.buscador .limpiar,
+table.datos button {
+  touch-action: manipulation;
+  transition:
+    transform var(--t-pulsacion) var(--curva-pulsacion),
+    background-color var(--t-hover) ease,
+    border-color var(--t-hover) ease,
+    color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease;
+}
+
+.btn:active,
+.chip:active,
+.barra nav a:active,
+.selector-sesion:active,
+.buscador .limpiar:active,
+table.datos button:active {
+  transform: scale(0.96);
+  transition-duration: 0ms;
+}
+
+/* Las tarjetas son grandes: a igual escala el gesto se leería exagerado. */
+.tarjeta:active {
+  transform: scale(0.988);
+  transition-duration: 0ms;
+}
+
+/* Paridad de teclado: quien navega con tabulador recibe la misma señal
+   que quien usa el ratón. */
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.barra :focus-visible { outline-color: var(--amber-l); }
+
+/* Entrada única al montar. Son secuencias predeterminadas, no estados que el
+   usuario pueda interrumpir, así que aquí los fotogramas clave son correctos. */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(10px); }
+}
+@keyframes aparecer-corto {
+  from { opacity: 0; transform: translateY(-6px); }
+}
 
 body {
   margin: 0;
@@ -62,7 +128,14 @@ a { color: var(--green); }
 }
 
 .contenido { flex: 1; display: flex; min-height: 0; }
-.pagina { flex: 1; padding: 22px; max-width: 1180px; margin: 0 auto; width: 100%; }
+/* Entrada al cambiar de sección o al llegar los datos de la ficha. El disparo
+   es una acción del usuario (navegar), así que el movimiento tiene origen y
+   aporta continuidad en vez de desorientar. El mapa queda fuera a propósito:
+   no es `.pagina` y no debe moverse al entrar. */
+.pagina {
+  flex: 1; padding: 22px; max-width: 1180px; margin: 0 auto; width: 100%;
+  animation: aparecer var(--t-entrada) var(--curva-entrada) both;
+}
 
 /* ---------- Explorar ---------- */
 .explorar { display: grid; grid-template-columns: 420px 1fr; flex: 1; min-height: 0; }
@@ -106,10 +179,26 @@ a { color: var(--green); }
 
 .tarjeta {
   border: 1px solid var(--line); border-radius: var(--radio); padding: 12px;
-  margin-bottom: 9px; background: #fff; cursor: pointer; transition: all .12s;
+  margin-bottom: 9px; background: #fff; cursor: pointer;
 }
-.tarjeta:hover { border-color: var(--moss); box-shadow: var(--sombra); }
+/* El hover se reserva a punteros reales: en pantallas táctiles el navegador
+   lo reproduce al tocar y la tarjeta se queda "pegada" en estado elevado. */
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta:hover {
+    transform: translateY(-2px);
+    border-color: var(--moss);
+    box-shadow: var(--sombra-alta);
+  }
+}
 .tarjeta.sel { border-color: var(--green); background: #f4f9f6; }
+
+/* Escalonado solo en la primera carga de la lista. En los cambios de filtro
+   los resultados aparecen de inmediato: filtrar ocurre decenas de veces por
+   sesión y cualquier retardo ahí se percibe como lentitud, no como pulido. */
+.tarjeta.entra {
+  animation: aparecer 300ms var(--curva-entrada) both;
+  animation-delay: calc(var(--orden, 0) * 35ms);
+}
 .tarjeta h3 { margin: 0 0 4px; font-size: 15px; color: var(--forest); }
 .tarjeta .meta { font-size: 12.5px; color: var(--grey); display: flex; gap: 8px; flex-wrap: wrap; }
 .tarjeta .servicios { font-size: 12px; color: var(--grey); margin-top: 6px; }
@@ -123,7 +212,10 @@ a { color: var(--green); }
 .etiqueta.sinhorario { background: #fdf0e2; color: #9a5a1c; }
 .estrella { color: var(--amber); font-weight: 700; }
 
-.vacio { padding: 30px 18px; text-align: center; color: var(--grey); }
+.vacio {
+  padding: 30px 18px; text-align: center; color: var(--grey);
+  animation: aparecer 260ms var(--curva-entrada) both;
+}
 .vacio strong { display: block; color: var(--forest); margin-bottom: 8px; font-size: 15px; }
 
 .mapa { min-height: 0; }
@@ -132,9 +224,15 @@ a { color: var(--green); }
   background: var(--amber); width: 22px; height: 22px; border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg); border: 2.5px solid #fff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, .3);
+  /* Solo color y sombra: los pines se redibujan en cada cambio de filtro y
+     animar su tamaño obligaría a recalcular maquetación decenas de veces. */
+  transition: background-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
 }
 .pin.cerrado { background: var(--grey); }
-.pin.sel { background: var(--forest); width: 28px; height: 28px; }
+.pin.sel {
+  background: var(--forest); width: 28px; height: 28px;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, .38);
+}
 
 /* ---------- Ficha ---------- */
 .ficha-portada {
@@ -200,7 +298,13 @@ table.datos tr:nth-child(even) td { background: #f7faf8; }
 .campo input:focus { border-color: var(--green); }
 .campo .ayuda { font-size: 12px; color: var(--grey); margin-top: 3px; }
 
-.alerta { border-radius: 9px; padding: 10px 13px; font-size: 13.5px; margin-bottom: 12px; }
+/* Los avisos de resultado aparecen junto a la acción que los provocó, no en
+   una esquina: la mirada no tiene que abandonar el control que se acaba de
+   usar. La entrada confirma que algo ocurrió. */
+.alerta {
+  border-radius: 9px; padding: 10px 13px; font-size: 13.5px; margin-bottom: 12px;
+  animation: aparecer-corto 240ms var(--curva-entrada) both;
+}
 .alerta.ok { background: var(--light); color: var(--green); }
 .alerta.error { background: #fbeaec; color: #a83242; }
 .alerta.info { background: var(--amber-l); color: #8a4a15; }
@@ -230,3 +334,27 @@ table.datos tr:nth-child(even) td { background: #f7faf8; }
   padding: 14px; color: var(--grey); font-size: 13.5px; background: #f7faf8;
 }
 .cargando { padding: 40px; text-align: center; color: var(--grey); }
+
+/* ---------- Accesibilidad: movimiento reducido ----------
+   Quien haya pedido en su sistema operativo que se reduzca el movimiento
+   (por vértigo, migrañas o sensibilidad vestibular) recibe los mismos
+   cambios de estado, pero sin desplazamiento ni escalonado. No se elimina
+   la realimentación: se elimina el viaje. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Sin desplazamiento vertical en las entradas. */
+  .tarjeta:hover { transform: none; }
+  .btn:active,
+  .chip:active,
+  .tarjeta:active,
+  .barra nav a:active { transform: none; }
+}

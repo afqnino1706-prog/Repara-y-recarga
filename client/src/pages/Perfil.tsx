@@ -10,7 +10,16 @@ type Aviso = { tipo: 'ok' | 'error'; texto: string; lista?: string[] } | null;
 export function Perfil() {
   const { usuario, recargar } = useSesion();
   const [perfil, setPerfil] = useState<TPerfil | null>(null);
-  const [aviso, setAviso] = useState<Aviso>(null);
+  const [aviso, setAvisoBruto] = useState<Aviso>(null);
+
+  // React reutiliza el nodo del aviso cuando solo cambia su contenido, así que
+  // la animación de entrada no se repetiría y un segundo guardado seguido no
+  // daría ninguna señal visible. Este contador fuerza un nodo nuevo cada vez.
+  const [avisoN, setAvisoN] = useState(0);
+  const setAviso = (a: Aviso) => {
+    setAvisoBruto(a);
+    setAvisoN((n) => n + 1);
+  };
 
   const [nombre, setNombre] = useState('');
   const [ciudad, setCiudad] = useState('');
@@ -91,7 +100,7 @@ export function Perfil() {
       </div>
 
       {aviso && (
-        <div className={`alerta ${aviso.tipo}`}>
+        <div key={avisoN} className={`alerta ${aviso.tipo}`}>
           {aviso.texto}
           {aviso.lista && (
             <ul>
